@@ -47,7 +47,7 @@ type GScanConfig struct {
 	ScanGoogleHosts ScanGoogleHostsConfig
 }
 
-func main() {
+func gscan() {
 	iprange_file := flag.String("iprange", "./iprange.conf", "IP Range file")
 	conf_file := flag.String("conf", "./gscan.conf", "Config file, json format")
 	flag.Parse()
