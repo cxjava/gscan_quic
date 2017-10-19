@@ -47,23 +47,27 @@ type GScanConfig struct {
 	ScanGoogleHosts ScanGoogleHostsConfig
 }
 
-func gscan() {
+// force get ip cnt
+func  Gscan(cnt int, savetofile bool) []byte {
 	iprange_file := flag.String("iprange", "./iprange.conf", "IP Range file")
 	conf_file := flag.String("conf", "./gscan.conf", "Config file, json format")
 	flag.Parse()
 	conf_content, err := ioutil.ReadFile(*conf_file)
 	if nil != err {
 		fmt.Printf("%v\n", err)
-		return
+		return nil
 	}
 	var cfg GScanConfig
 	err = json.Unmarshal(conf_content, &cfg)
 	if nil != err {
 		fmt.Printf("%v\n", err)
-		return
+		return nil
 	}
 	tlsCfg.ServerName = cfg.ScanGoogleIP.HTTPVerifyHosts[0]
-
+	if cnt > 0 {
+		cfg.ScanGoogleIP.RecordLimit = cnt
+	}
+	fmt.Printf("%d\n", cfg.ScanGoogleIP.RecordLimit)
 	cfg.scanIP = strings.EqualFold(cfg.Operation, "ScanGoogleIP")
 	cfg.ScanMaxSSLRTT = cfg.ScanMaxSSLRTT * time.Millisecond
 	cfg.ScanMinSSLRTT = cfg.ScanMinSSLRTT * time.Millisecond
@@ -79,7 +83,7 @@ func gscan() {
 	outputfile, err := os.OpenFile(outputfile_path, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0644)
 	if nil != err {
 		fmt.Printf("%v\n", err)
-		return
+		return nil
 	}
 	defer func() {
 		err = outputfile.Close()
@@ -98,7 +102,7 @@ func gscan() {
 		options.inputHosts, err = parseHostsFile(cfg.ScanGoogleHosts.InputHosts)
 		if nil != err {
 			fmt.Printf("%v\n", err)
-			return
+			return nil
 		}
 	}
 	log.Printf("Start loading IP Range file:%s\n", *iprange_file)
@@ -106,7 +110,7 @@ func gscan() {
 
 	if nil != err {
 		fmt.Printf("%v\n", err)
-		return
+		return nil
 	}
 
 	log.Printf("Start scanning available IP\n")
@@ -175,7 +179,10 @@ func gscan() {
 			}
 			b.WriteString("\n")
 			// ioutil.WriteFile("google_ip2.txt", []byte(`"`+strings.Join(ss, `","`)+`",`), 0666)
-			ioutil.WriteFile(fmt.Sprintf("google_ip_%s.txt", time.Now().Format("20060102_15.04.05")), b.Bytes(), 0666)
+			if savetofile {
+				ioutil.WriteFile(fmt.Sprintf("google_ip_%s.txt", time.Now().Format("20060102_15.04.05")), b.Bytes(), 0666)
+			}			
+			return b.Bytes() 
 		} else {
 			outputfile.WriteString(fmt.Sprintf("###############Update %s###############\n", time.Now().Format("2006-01-02 15:04:05")))
 			outputfile.WriteString("###############GScan Hosts Begin#################\n")
@@ -194,7 +201,9 @@ func gscan() {
 			for _, h := range options.inputHosts {
 				outputfile.WriteString(fmt.Sprintf("%s\t%s\n", h.IP, h.Host))
 			}
+			return nil
 		}
-
+		
 	}
+	return nil
 }
